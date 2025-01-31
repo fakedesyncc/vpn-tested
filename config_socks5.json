@@ -1,0 +1,1 @@
+{"inbounds": [{"listen": "127.0.0.1", "port": 1080, "protocol": "socks", "settings": {"auth": "noauth", "udp": true}}], "outbounds": [{"protocol": "freedom", "tag": "direct", "settings": {"servers": [{"address": "tr.gvpn.space", "port": 8443}]}}]}

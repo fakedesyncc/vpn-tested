@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Universal VPN</title>
+    <style>
+        .container { max-width: 600px; margin: 50px auto; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background: #d4edda; color: #155724; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>VPN Control Panel</h1>
+        <input type="text" id="host" placeholder="Proxy Host">
+        <input type="text" id="port" placeholder="Proxy Port">
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+        <div id="status" class="status disconnected">Status: Disconnected</div>
+    </div>
+    <script>
+        async function connect() {
+            const host = document.getElementById('host').value;
+            const port = document.getElementById('port').value;
+            
+            const response = await fetch('/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ host, port })
+            });
+            
+            const result = await response.json();
+            updateStatus(result.status);
+        }
+
+        async function disconnect() {
+            const response = await fetch('/disconnect');
+            const result = await response.json();
+            updateStatus(result.status);
+        }
+
+        function updateStatus(status) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${status}`;
+            statusDiv.textContent = `Status: ${status}`;
+        }
+    </script>
+</body>
+</html>

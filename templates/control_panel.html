@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multi-Protocol VPN Client</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --error: #F44336;
+            --background: #F5F5F5;
+            --text: #212121;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: var(--background);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .protocol-fields {
+            display: none;
+            padding: 1rem;
+            background: #FAFAFA;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: opacity 0.3s;
+            width: 100%;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .connected { background: #E8F5E9; color: #2E7D32; }
+        .disconnected { background: #FFEBEE; color: var(--error); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>VPN Connection Manager</h1>
+        
+        <div class="form-group">
+            <label>Connection Type</label>
+            <select id="protocolType" onchange="toggleProtocolFields()">
+                <option value="socks5">SOCKS5</option>
+                <option value="vless">VLESS + Reality</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Server Address</label>
+            <input type="text" id="host" placeholder="example.com">
+        </div>
+
+        <div class="form-group">
+            <label>Server Port</label>
+            <input type="number" id="port" placeholder="8443">
+        </div>
+
+        <!-- SOCKS5 Fields -->
+        <div id="socks5Fields" class="protocol-fields">
+            <input type="text" id="username" placeholder="Username (optional)">
+            <input type="password" id="password" placeholder="Password (optional)">
+        </div>
+
+        <!-- VLESS Fields -->
+        <div id="vlessFields" class="protocol-fields">
+            <input type="text" id="uuid" placeholder="UUID">
+            <input type="text" id="publicKey" placeholder="Public Key">
+            <input type="text" id="sni" placeholder="SNI">
+        </div>
+
+        <button onclick="handleConnect()">Connect</button>
+        <button onclick="disconnect()" style="background: var(--error); margin-top: 1rem;">Disconnect</button>
+        
+        <div id="status" class="status disconnected">Status: Disconnected</div>
+    </div>
+
+    <script>
+        function toggleProtocolFields() {
+            const type = document.getElementById('protocolType').value;
+            document.querySelectorAll('.protocol-fields').forEach(el => el.style.display = 'none');
+            document.getElementById(`${type}Fields`).style.display = 'block';
+        }
+
+        async function handleConnect() {
+            const type = document.getElementById('protocolType').value;
+            const data = {
+                type: type,
+                host: document.getElementById('host').value,
+                port: document.getElementById('port').value
+            };
+
+            if (type === 'vless') {
+                data.uuid = document.getElementById('uuid').value;
+                data.public_key = document.getElementById('publicKey').value;
+                data.sni = document.getElementById('sni').value;
+            }
+
+            try {
+                const response = await fetch('/connect', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                updateStatus(result.status === 'connected' ? 
+                    `Connected via ${type.toUpperCase()}` : 
+                    result.message);
+            } catch (e) {
+                updateStatus(`Error: ${e.message}`);
+            }
+        }
+
+        async function disconnect() {
+            try {
+                const response = await fetch('/disconnect', {method: 'POST'});
+                const result = await response.json();
+                updateStatus(result.status);
+            } catch (e) {
+                updateStatus(`Error: ${e.message}`);
+            }
+        }
+
+        function updateStatus(message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = `Status: ${message}`;
+            statusDiv.className = `status ${message.toLowerCase().includes('connected') ? 'connected' : 'disconnected'}`;
+        }
+
+        // Initial setup
+        toggleProtocolFields();
+    </script>
+</body>
+</html>
